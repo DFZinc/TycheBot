@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TycheBot</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect width=%2232%22 height=%2232%22 rx=%226%22 fill=%22%23ffffff%22/><polygon points=%2216,4 26,16 16,20 6,16%22 fill=%22%230a0a0f%22/><polygon points=%2216,20 26,16 16,28 6,16%22 fill=%22%23555566%22/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #0a0a0f;
+    --border:  rgba(255,255,255,0.08);
+    --text:    #e2e2f0;
+    --text2:   #b0b0cc;
+    --text3:   #8888aa;
+    --green:   #3fb950;
+    --red:     #f85149;
+    --blue:    #58a6ff;
+    --cyan:    #39d0d8;
+    --amber:   #e3b341;
+    --purple:  #bc8cff;
+    --gold:    #ffd700;
+    --radius:  6px;
+    --mono:    'Space Mono', monospace;
+    --sans:    'DM Sans', sans-serif;
+    --display: 'Cinzel', serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    min-height: 100vh;
+    background-image: url('/static/bg.jpg');
+    background-size: cover;
+    background-attachment: fixed;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 32px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,0,0,0.40);
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-family: var(--display);
+    font-size: 19px;
+    letter-spacing: 0.12em;
+    color: var(--text);
+  }
+  .logo span { color: #c8c8d8; }
+  .logo-sub {
+    font-family: var(--sans);
+    font-size: 12px;
+    color: #e8e8f0;
+    margin-top: 2px;
+    font-weight: 300;
+  }
+  .version-tag { font-family: var(--sans); font-size: 9px; color: var(--text3); margin-left: 8px; }
+
+  .header-right { display: flex; align-items: center; gap: 10px; }
+
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); flex-shrink: 0; }
+  .status-dot.running { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .status-label { font-family: var(--mono); font-size: 11px; color: var(--red); }
+  .status-label.running { color: var(--green); }
+
+  .price-ticker {
+    font-family: var(--mono); font-size: 11px; color: var(--amber);
+    background: rgba(227,179,65,0.1); padding: 4px 10px;
+    border-radius: var(--radius); border: 1px solid rgba(227,179,65,0.2);
+  }
+
+  .btn {
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    letter-spacing: 0.05em; padding: 6px 14px; border-radius: var(--radius);
+    border: 1px solid; cursor: pointer; transition: all 0.15s;
+    text-transform: uppercase; background: transparent;
+  }
+  .btn-start { border-color: var(--green); color: var(--green); }
+  .btn-start:hover { background: var(--green); color: #000; }
+  .btn-stop  { border-color: var(--red); color: var(--red); }
+  .btn-stop:hover  { background: var(--red); color: #000; }
+  .btn-secondary { border-color: var(--border); color: var(--text2); }
+  .btn-secondary:hover { border-color: var(--blue); color: var(--blue); }
+
+  /* ── Page layout ── */
+  .page {
+    padding: 20px 32px;
+    max-width: 1500px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ── Stat cards ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+  }
+
+  .stat-card {
+    background: rgba(0,0,0,0.28);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 16px 12px;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(4px);
+  }
+  .stat-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  }
+  .stat-card.green::before  { background: var(--green); }
+  .stat-card.blue::before   { background: var(--blue); }
+  .stat-card.amber::before  { background: var(--amber); }
+  .stat-card.red::before    { background: var(--red); }
+  .stat-card.purple::before { background: var(--purple); }
+  .stat-card.gold::before   { background: var(--gold); }
+
+  .stat-label    { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #fff; margin-bottom: 8px; font-weight: 700; }
+  .stat-value    { font-family: var(--mono); font-size: 20px; font-weight: 700; color: #fff; line-height: 1.2; }
+  .stat-value-sub { font-family: var(--mono); font-size: 12px; color: #c8c8d8; margin-top: 3px; }
+  .stat-sub      { font-size: 12px; color: #a0a0c0; margin-top: 4px; }
+
+  /* ── Tab layout ── */
+  .tab-layout {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 12px;
+    min-height: 600px;
+  }
+
+  /* ── Tab sidebar ── */
+  .tab-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #c0c0d8;
+    background: rgba(0,0,0,0.15);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+    width: 100%;
+  }
+  .tab-btn:hover { background: rgba(255,255,255,0.06); color: var(--text); border-color: rgba(255,255,255,0.12); }
+  #tab-settings:hover  { background: rgba(188,140,255,0.10); color: var(--purple); border-color: rgba(188,140,255,0.25); }
+  #tab-wallets:hover   { background: rgba(57,208,216,0.10);  color: var(--cyan);   border-color: rgba(57,208,216,0.25); }
+  #tab-positions:hover { background: rgba(63,185,80,0.10);   color: var(--green);  border-color: rgba(63,185,80,0.25); }
+  #tab-history:hover   { background: rgba(227,179,65,0.10);  color: var(--amber);  border-color: rgba(227,179,65,0.25); }
+  #tab-log:hover       { background: rgba(88,166,255,0.10);  color: var(--blue);   border-color: rgba(88,166,255,0.25); }
+  .tab-btn.active { border-color: rgba(255,255,255,0.20); }
+  #tab-agent.active     { background: rgba(248,81,73,0.12);   color: var(--red);    border-color: rgba(248,81,73,0.35); }
+  #tab-agent:hover      { background: rgba(248,81,73,0.10);   color: var(--red);    border-color: rgba(248,81,73,0.25); }
+  #tab-swap.active      { background: rgba(57,208,216,0.12);  color: var(--cyan);   border-color: rgba(57,208,216,0.35); }
+  #tab-swap:hover       { background: rgba(57,208,216,0.10);  color: var(--cyan);   border-color: rgba(57,208,216,0.25); }
+  #tab-settings.active  { background: rgba(188,140,255,0.12); color: var(--purple); border-color: rgba(188,140,255,0.35); }
+
+  .token-info-card {
+    background: rgba(0,0,0,0.30);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: none;
+  }
+  .token-info-card.visible { display: block; }
+  .token-info-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 10px;
+  }
+  .token-info-logo {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: rgba(255,255,255,0.08);
+    flex-shrink: 0;
+  }
+  .token-logo-placeholder {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.10);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 14px; font-weight: 700;
+    color: var(--cyan); flex-shrink: 0;
+  }
+  .token-info-name {
+    font-family: var(--display);
+    font-size: 18px;
+    letter-spacing: 0.08em;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .token-info-price {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--cyan);
+    margin-bottom: 12px;
+  }
+  .token-info-changes {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 0;
+  }
+  .change-item { display: flex; flex-direction: column; gap: 3px; }
+  .change-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #9999bb; }
+  .change-value { font-family: var(--mono); font-size: 14px; font-weight: 700; }
+  .change-pos { color: var(--green); }
+  .change-neg { color: var(--red); }
+  .change-zer { color: #9999bb; }
+
+  .swap-buy-row { display: flex; gap: 10px; margin-top: 16px; }
+  .btn-buy {
+    flex: 1; padding: 14px; font-family: var(--mono); font-size: 13px;
+    font-weight: 700; letter-spacing: 0.04em; cursor: pointer;
+    border-radius: var(--radius); border: 1px solid var(--green);
+    color: var(--green); background: rgba(63,185,80,0.08);
+    transition: all 0.15s; text-transform: uppercase;
+  }
+  .btn-buy:hover   { background: var(--green); color: #000; }
+  .btn-buy:disabled { opacity: 0.4; cursor: not-allowed; }
+  .swap-error { font-family: var(--mono); font-size: 12px; color: var(--red); margin-top: 8px; }
+  .swap-success { font-family: var(--mono); font-size: 12px; color: var(--green); margin-top: 8px; }
+  #tab-wallets.active   { background: rgba(57,208,216,0.12);  color: var(--cyan);   border-color: rgba(57,208,216,0.35); }
+  #tab-positions.active { background: rgba(63,185,80,0.12);   color: var(--green);  border-color: rgba(63,185,80,0.35); }
+  #tab-history.active   { background: rgba(227,179,65,0.12);  color: var(--amber);  border-color: rgba(227,179,65,0.35); }
+  #tab-log.active       { background: rgba(88,166,255,0.12);  color: var(--blue);   border-color: rgba(88,166,255,0.35); }
+  .tab-btn .tab-icon { font-size: 14px; flex-shrink: 0; }
+  .tab-badge {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: #e8e8f0;
+    background: rgba(255,255,255,0.08);
+    padding: 1px 6px;
+    border-radius: 8px;
+  }
+  .tab-btn.active .tab-badge { color: var(--cyan); }
+
+  /* ── Tab content panel ── */
+  .tab-content {
+    background: rgba(0,0,0,0.45);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    backdrop-filter: blur(6px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .tab-pane { display: none; flex-direction: column; flex: 1; }
+  .tab-pane.active { display: flex; }
+
+  .pane-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 18px; border-bottom: 1px solid var(--border);
+    background: rgba(0,0,0,0.25);
+    flex-shrink: 0;
+  }
+  .pane-title { font-family: var(--mono); font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cyan); }
+  .pane-badge { font-family: var(--mono); font-size: 11px; color: #9999bb; background: rgba(255,255,255,0.06); padding: 2px 10px; border-radius: 10px; }
+
+  .pane-body { padding: 16px; overflow-y: auto; flex: 1; }
+
+  /* ── Agent settings ── */
+  .settings-section { margin-bottom: 24px; }
+  .settings-section-title {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: #9999bb; margin-bottom: 14px;
+    padding-bottom: 6px; border-bottom: 1px solid var(--border);
+  }
+  .api-key-row { display: flex; gap: 8px; margin-bottom: 8px; }
+  .api-key-input {
+    flex: 1; background: rgba(0,0,0,0.40); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px 14px; font-family: var(--mono);
+    font-size: 13px; color: var(--text); outline: none;
+    letter-spacing: 0.05em;
+  }
+  .api-key-input:focus { border-color: var(--cyan); }
+  .api-key-note { font-size: 11px; color: #9999bb; margin-top: 4px; }
+
+  .slider-row { display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px; }
+  .slider-field label {
+    display: flex; justify-content: space-between;
+    font-family: var(--mono); font-size: 11px; color: #c0c0d8;
+    margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .slider-field label span { color: var(--cyan); }
+  input[type=range] {
+    width: 100%; accent-color: var(--cyan);
+    background: transparent; cursor: pointer;
+  }
+
+  .theme-toggle-row { display: flex; gap: 12px; margin-top: 4px; }
+  .theme-btn {
+    flex: 1; padding: 12px; font-family: var(--mono); font-size: 12px;
+    letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
+    border-radius: var(--radius); border: 1px solid var(--border);
+    background: transparent; color: var(--text2); transition: all 0.15s;
+  }
+  .theme-btn.active { border-color: var(--cyan); color: var(--cyan); background: rgba(57,208,216,0.10); }
+  .theme-btn:hover  { border-color: var(--text2); color: var(--text); }
+
+  /* ── Tables ── */
+  .ptable { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
+  .ptable th { text-align: left; padding: 8px 12px; color: #9999bb; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+  .ptable td { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.03); vertical-align: middle; }
+  .ptable tr:last-child td { border-bottom: none; }
+  .ptable tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .pnl-pos { color: var(--green); font-weight: 700; }
+  .pnl-neg { color: var(--red); font-weight: 700; }
+  .pnl-zer { color: var(--text3); }
+
+  .wallet-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; flex-shrink: 0; vertical-align: middle; }
+
+  .reason-tag { font-size: 11px; padding: 2px 8px; border-radius: 3px; font-family: var(--mono); white-space: nowrap; }
+  .reason-wallet_sold { background: rgba(88,166,255,0.15); color: var(--blue); }
+  .reason-take_profit { background: rgba(63,185,80,0.15); color: var(--green); }
+  .reason-stop_loss   { background: rgba(248,81,73,0.15); color: var(--red); }
+  .reason-manual      { background: rgba(188,140,255,0.15); color: var(--purple); }
+
+  .btn-close-pos {
+    font-family: var(--mono); font-size: 10px; padding: 3px 9px; border-radius: 3px;
+    border: 1px solid var(--red); color: var(--red); background: transparent; cursor: pointer;
+  }
+  .btn-close-pos:hover { background: var(--red); color: #000; }
+
+  /* ── Watchlist pane ── */
+  .wl-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .wl-item:last-child { border-bottom: none; }
+  .wl-label { font-family: var(--mono); font-size: 14px; color: var(--text); }
+  .wl-addr  { font-family: var(--mono); font-size: 11px; color: #9999bb; margin-top: 3px; }
+
+  .btn-wl-remove {
+    font-family: var(--mono); font-size: 10px; padding: 4px 10px; border-radius: 3px;
+    border: 1px solid var(--red); color: var(--red); background: transparent; cursor: pointer; flex-shrink: 0;
+  }
+  .btn-wl-remove:hover { background: var(--red); color: #000; }
+
+  .add-wallet-row { display: flex; gap: 8px; padding: 14px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+
+  .sim-input {
+    flex: 1; background: rgba(0,0,0,0.40); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 9px 14px; font-family: var(--mono);
+    font-size: 13px; color: var(--text); outline: none;
+  }
+  .sim-input:focus { border-color: var(--cyan); }
+  .sim-input::placeholder { color: #8888aa; }
+
+  .btn-add { border-color: var(--cyan); color: var(--cyan); white-space: nowrap; }
+  .btn-add:hover { background: var(--cyan); color: #000; }
+
+  /* ── Config pane ── */
+  .config-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; padding: 20px; }
+  .config-field label {
+    display: block; font-family: var(--mono); font-size: 11px;
+    letter-spacing: 0.08em; text-transform: uppercase; color: #c0c0d8; margin-bottom: 8px;
+  }
+  .config-field input {
+    width: 100%; background: rgba(0,0,0,0.40); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px 14px; font-family: var(--mono);
+    font-size: 15px; color: var(--text); outline: none;
+  }
+  .config-field input:focus { border-color: var(--cyan); }
+  .config-actions { display: flex; gap: 10px; padding: 0 20px 20px; }
+
+  /* ── Log pane ── */
+  .log-terminal {
+    font-family: var(--mono); font-size: 13px; line-height: 1.9;
+    overflow-y: auto; flex: 1; padding: 8px 4px;
+    display: flex;
+    flex-direction: column-reverse;
+    justify-content: flex-end;
+  }
+  .log-line   { padding: 2px 6px; color: var(--text2); }
+  .log-green  { color: var(--green); }
+  .log-red    { color: var(--red); }
+  .log-cyan   { color: var(--cyan); }
+  .log-amber  { color: var(--amber); }
+  .log-gold   { color: var(--gold); }
+
+  /* ── Empty ── */
+  .empty {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; height: 100%; min-height: 120px; color: var(--text3); gap: 10px;
+  }
+  .empty-icon { font-size: 28px; opacity: 0.3; }
+  .empty-text { font-family: var(--mono); font-size: 13px; }
+
+  .refresh-note { font-family: var(--mono); font-size: 10px; color: #9999bb; padding: 6px 16px; border-top: 1px solid var(--border); flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <div class="logo">
+    <img id="siteLogo" src="/static/logo.png" alt="TycheBot" style="height:72px;width:auto;object-fit:contain;filter:drop-shadow(0 0 6px rgba(255,255,255,0.15));flex-shrink:0">
+    <div>
+      <div><span style="color:#f97316;font-weight:600">TYCHEBOT</span> <span style="color:#e8e8f0">/ TRADING DASHBOARD</span><span class="version-tag">v1 beta</span></div>
+      <div class="logo-sub">Fortune favours the prepared — Zen-Tech.inc &nbsp;·&nbsp; <span style="color:#9090b0;font-size:11px">Vibe coded by Claude AI &amp; ZenKnowsCrypto</span></div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="price-ticker" id="ethTicker">ETH $—</span>
+    <div class="status-dot" id="statusDot"></div>
+    <span class="status-label" id="statusLabel">STOPPED</span>
+    <button class="btn btn-secondary" onclick="refreshAll()">↻ REFRESH</button>
+    <button class="btn btn-start" id="startBtn" onclick="startAgent()">▶ START</button>
+    <button class="btn btn-stop"  id="stopBtn"  onclick="stopAgent()" style="display:none">■ STOP</button>
+  </div>
+</header>
+
+<div class="page">
+
+  <!-- Stat cards — always at top -->
+  <div class="stats-row">
+    <div class="stat-card green">
+      <div class="stat-label">Available ETH</div>
+      <div class="stat-value" id="statBalanceEth">— ETH</div>
+      <div class="stat-value-sub" id="statBalanceUsd">of — ETH total</div>
+      <div class="stat-sub" id="statAvailable">Token value: $—</div>
+    </div>
+    <div class="stat-card gold">
+      <div class="stat-label">Total P&L</div>
+      <div class="stat-value" id="statPnlEth">— ETH</div>
+      <div class="stat-value-sub" id="statPnlUsd">$—</div>
+      <div class="stat-sub">realized + unrealized</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-label">Unrealized P&L</div>
+      <div class="stat-value" id="statUnrealEth">— ETH</div>
+      <div class="stat-value-sub" id="statUnrealUsd">$—</div>
+      <div class="stat-sub">open positions</div>
+    </div>
+    <div class="stat-card amber">
+      <div class="stat-label">Win Rate</div>
+      <div class="stat-value" id="statWinRate">—%</div>
+      <div class="stat-sub" id="statTrades">0 closed trades</div>
+    </div>
+    <div class="stat-card purple">
+      <div class="stat-label">Open Positions</div>
+      <div class="stat-value" id="statOpen">—</div>
+      <div class="stat-sub" id="statGas">Gas spent: —</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-label">Max Drawdown</div>
+      <div class="stat-value" id="statDrawdown">—%</div>
+      <div class="stat-sub" id="statPeak">Peak: —</div>
+    </div>
+  </div>
+
+  <!-- Tab layout -->
+  <div class="tab-layout">
+
+    <!-- Left: vertical tabs -->
+    <div class="tab-sidebar">
+      <button class="tab-btn" onclick="showTab('agent')" id="tab-agent">
+        <span class="tab-icon">🔑</span> Agent Settings
+      </button>
+      <button class="tab-btn active" onclick="showTab('settings')" id="tab-settings">
+        <span class="tab-icon">⚙</span> Sim Settings
+      </button>
+      <button class="tab-btn" onclick="showTab('wallets')" id="tab-wallets">
+        <span class="tab-icon">◎</span> Copy-Trade Wallets
+        <span class="tab-badge" id="wlBadge">0/5</span>
+      </button>
+      <button class="tab-btn" onclick="showTab('swap')" id="tab-swap">
+        <span class="tab-icon">⚡</span> Manual Swap
+      </button>
+      <button class="tab-btn" onclick="showTab('positions')" id="tab-positions">
+        <span class="tab-icon">◈</span> Open Positions
+        <span class="tab-badge" id="openBadge">0</span>
+      </button>
+      <button class="tab-btn" onclick="showTab('history')" id="tab-history">
+        <span class="tab-icon">◈</span> Trade History
+        <span class="tab-badge" id="historyBadge">0</span>
+      </button>
+      <button class="tab-btn" onclick="showTab('log')" id="tab-log">
+        <span class="tab-icon">▸</span> Agent Log
+        <span class="tab-badge" id="logBadge">0</span>
+      </button>
+    </div>
+
+    <!-- Right: content panel -->
+    <div class="tab-content">
+
+      <!-- Agent Settings -->
+      <div class="tab-pane" id="pane-agent">
+        <div class="pane-header">
+          <span class="pane-title">◈ Agent Settings</span>
+        </div>
+        <div class="pane-body">
+
+          <div class="settings-section">
+            <div class="settings-section-title">Etherscan API Key</div>
+            <div class="api-key-row">
+              <input class="api-key-input" type="password" id="apiKeyInput" placeholder="Enter your Etherscan API key..."/>
+              <button class="btn btn-add" id="btnSaveApiKey" onclick="saveApiKey()">SAVE</button>
+              <button class="btn btn-secondary" id="apiKeyToggle" onclick="toggleApiKeyVisibility()">SHOW</button>
+            </div>
+            <div class="api-key-note">Saved to agent_settings.json — loaded automatically on agent start. No more manual editing.</div>
+          </div>
+
+          <div class="settings-section">
+            <div class="settings-section-title">Theme Settings</div>
+            <div class="slider-row">
+              <div class="slider-field">
+                <label>Panel Transparency <span id="opacityVal">45%</span></label>
+                <input type="range" id="opacitySlider" min="0" max="90" step="5" value="45" oninput="applyThemeSettings()"/>
+              </div>
+              <div class="slider-field">
+                <label>Panel Blur <span id="blurVal">6px</span></label>
+                <input type="range" id="blurSlider" min="0" max="20" step="1" value="6" oninput="applyThemeSettings()"/>
+              </div>
+            </div>
+            <button class="btn btn-secondary" id="btnSaveTheme" style="margin-bottom:16px" onclick="saveThemeSettings()">SAVE THEME SETTINGS</button>
+            <div class="settings-section-title">Background Theme</div>
+            <div class="theme-toggle-row">
+              <button class="theme-btn active" id="themeA" onclick="setTheme('A')">Theme A</button>
+              <button class="theme-btn" id="themeB" onclick="setTheme('B')">Theme B</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Sim Settings -->
+      <div class="tab-pane active" id="pane-settings">
+        <div class="pane-header">
+          <span class="pane-title">◈ Simulation Settings</span>
+        </div>
+        <div class="config-grid">
+          <div class="config-field">
+            <label>Starting Balance (ETH)</label>
+            <input type="number" step="0.01" id="cfgBalance" placeholder="1.0"/>
+          </div>
+          <div class="config-field">
+            <label>Trade Size (ETH)</label>
+            <input type="number" step="0.001" id="cfgTradeSize" placeholder="0.05"/>
+          </div>
+          <div class="config-field">
+            <label>Take Profit %</label>
+            <input type="number" id="cfgTp" placeholder="50"/>
+          </div>
+          <div class="config-field">
+            <label>Stop Loss %</label>
+            <input type="number" id="cfgSl" placeholder="20"/>
+          </div>
+        </div>
+        <div class="config-actions">
+          <button class="btn btn-add" id="btnSaveConfig" onclick="saveConfig()">SAVE SETTINGS</button>
+          <button class="btn btn-secondary" onclick="resetPortfolio()">↺ RESET PORTFOLIO</button>
+        </div>
+      </div>
+
+      <!-- Copy-Trade Wallets -->
+      <div class="tab-pane" id="pane-wallets">
+        <div class="pane-header">
+          <span class="pane-title">◈ Copy-Trade Wallets</span>
+          <span class="pane-badge" id="wlBadge2">0 / 5</span>
+        </div>
+        <div class="add-wallet-row">
+          <input class="sim-input" id="walletAddrInput" placeholder="Wallet address 0x..." maxlength="42" onkeydown="if(event.key==='Enter') addWallet()"/>
+          <input class="sim-input" id="walletLabelInput" placeholder="Label" style="max-width:140px" onkeydown="if(event.key==='Enter') addWallet()"/>
+          <button class="btn btn-add" onclick="addWallet()">+ ADD</button>
+        </div>
+        <div id="walletList" style="overflow-y:auto;flex:1"></div>
+      </div>
+
+      <!-- Manual Swap -->
+      <div class="tab-pane" id="pane-swap">
+        <div class="pane-header">
+          <span class="pane-title">⚡ Manual Swap</span>
+        </div>
+        <div class="pane-body">
+
+          <div style="display:flex;gap:8px;margin-bottom:16px">
+            <input class="sim-input" id="swapCaInput" placeholder="Token contract address 0x..." style="flex:1"
+              onkeydown="if(event.key==='Enter') lookupToken()"/>
+            <button class="btn btn-add" id="btnLookup" onclick="lookupToken()">LOOKUP</button>
+          </div>
+
+          <div class="token-info-card" id="tokenInfoCard">
+            <div class="token-info-header">
+              <div id="tokenInfoLogo" class="token-logo-placeholder">?</div>
+              <div>
+                <div class="token-info-name" id="tokenInfoName">—</div>
+                <div class="token-info-price" id="tokenInfoPrice">$—</div>
+              </div>
+            </div>
+            <div class="token-info-changes">
+              <div class="change-item">
+                <span class="change-label">1 Hour</span>
+                <span class="change-value" id="change1h">—</span>
+              </div>
+              <div class="change-item">
+                <span class="change-label">24 Hours</span>
+                <span class="change-value" id="change24h">—</span>
+              </div>
+              <div class="change-item">
+                <span class="change-label">7 Days</span>
+                <span class="change-value" id="change7d">—</span>
+              </div>
+              <div class="change-item">
+                <span class="change-label">24h Volume</span>
+                <span class="change-value" style="color:#c0c0d8" id="changeVol">—</span>
+              </div>
+            </div>
+            <div class="swap-buy-row">
+              <button class="btn-buy" id="btnBuy001" onclick="manualBuy(0.01)">BUY 0.01 ETH</button>
+              <button class="btn-buy" id="btnBuy002" onclick="manualBuy(0.02)">BUY 0.02 ETH</button>
+              <button class="btn-buy" id="btnBuy005" onclick="manualBuy(0.05)">BUY 0.05 ETH</button>
+            </div>
+            <div id="swapMsg"></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Open Positions -->
+      <div class="tab-pane" id="pane-positions">
+        <div class="pane-header">
+          <span class="pane-title">◈ Open Positions</span>
+          <span class="pane-badge" id="openBadge2">0</span>
+        </div>
+        <div class="pane-body" id="openPositions"></div>
+        <div class="refresh-note" id="priceUpdateNote"></div>
+      </div>
+
+      <!-- Trade History -->
+      <div class="tab-pane" id="pane-history">
+        <div class="pane-header">
+          <span class="pane-title">◈ Trade History</span>
+          <span class="pane-badge" id="historyBadge2">0</span>
+        </div>
+        <div class="pane-body" id="tradeHistory"></div>
+      </div>
+
+      <!-- Agent Log -->
+      <div class="tab-pane" id="pane-log">
+        <div class="pane-header">
+          <span class="pane-title">◈ Agent Log</span>
+          <span class="pane-badge" id="logBadge2">0 lines</span>
+        </div>
+        <div style="padding:8px 16px;flex:1;display:flex;flex-direction:column;overflow:hidden;background:rgba(0,0,0,0.10);">
+          <div class="log-terminal" id="logTerminal"></div>
+        </div>
+      </div>
+
+    </div><!-- /tab-content -->
+  </div><!-- /tab-layout -->
+
+</div><!-- /page -->
+
+<script>
+const API = '';
+let ws = null;
+
+// ── Sounds ────────────────────────────────────────────────────────────
+const sounds = {
+  start: new Audio('/static/sounds/start.ogg'),
+  stop:  new Audio('/static/sounds/stop.ogg'),
+};
+
+function play(name) {
+  try {
+    const s = sounds[name];
+    if (!s) return;
+    s.currentTime = 0;
+    s.play().catch(() => {});
+  } catch(e) {}
+}
+let _ethPrice = 0;
+
+const WALLET_COLORS = ["#39d0d8","#3fb950","#bc8cff","#e3b341","#f85149"];
+let _walletColorMap = {};
+
+// ── Button feedback ──────────────────────────────────────────────────
+
+function btnSaved(id) {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  const orig = btn.textContent;
+  const origStyle = btn.style.cssText;
+  btn.textContent = '✓ SAVED';
+  btn.style.background = 'var(--green)';
+  btn.style.color = '#000';
+  btn.style.borderColor = 'var(--green)';
+  btn.disabled = true;
+  setTimeout(() => {
+    btn.textContent = orig;
+    btn.style.cssText = origStyle;
+    btn.disabled = false;
+  }, 2000);
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────
+
+function showTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('pane-' + name).classList.add('active');
+}
+
+// ── Manual swap ──────────────────────────────────────────────────────
+
+let _swapTokenData = null;
+
+async function lookupToken() {
+  const addr = document.getElementById('swapCaInput').value.trim().toLowerCase();
+  if (!addr || !addr.startsWith('0x') || addr.length !== 42) {
+    showSwapMsg('Invalid contract address', false);
+    return;
+  }
+  const btn = document.getElementById('btnLookup');
+  btn.textContent = 'Loading...';
+  btn.disabled = true;
+  document.getElementById('tokenInfoCard').classList.remove('visible');
+  document.getElementById('swapMsg').innerHTML = '';
+  _swapTokenData = null;
+
+  try {
+    const r = await fetch(`${API}/api/token/lookup/${addr}`);
+    const d = await r.json();
+    if (!r.ok) {
+      showSwapMsg(d.error || 'Token not found', false);
+      return;
+    }
+    _swapTokenData = d;
+    document.getElementById('tokenInfoName').textContent  = `${d.name} (${d.symbol})`;
+    document.getElementById('tokenInfoPrice').textContent = d.price_usd > 0
+      ? fmtPrice(d.price_usd)
+      : 'Price unavailable';
+
+    // Token logo
+    const logoEl = document.getElementById('tokenInfoLogo');
+    if (d.image_url && d.image_url !== 'missing.png') {
+      logoEl.outerHTML = `<img id="tokenInfoLogo" class="token-info-logo"
+        src="${d.image_url}" alt="${d.symbol}"
+        onerror="this.outerHTML='<div id=\'tokenInfoLogo\' class=\'token-logo-placeholder\'>${d.symbol.slice(0,2)}</div>'">`;
+    } else {
+      logoEl.outerHTML = `<div id="tokenInfoLogo" class="token-logo-placeholder">${d.symbol.slice(0,2)}</div>`;
+    }
+
+    const fmtChg = (v, id) => {
+      const el  = document.getElementById(id);
+      const cls = v > 0 ? 'change-pos' : v < 0 ? 'change-neg' : 'change-zer';
+      el.textContent  = (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
+      el.className    = 'change-value ' + cls;
+    };
+    fmtChg(d.change_1h,  'change1h');
+    fmtChg(d.change_24h, 'change24h');
+    fmtChg(d.change_7d,  'change7d');
+    document.getElementById('changeVol').textContent =
+      '$' + (d.volume_24h || 0).toLocaleString('en-US', {maximumFractionDigits: 0});
+
+    document.getElementById('tokenInfoCard').classList.add('visible');
+  } catch(e) {
+    showSwapMsg('Lookup failed — ' + e.message, false);
+  } finally {
+    btn.textContent = 'LOOKUP';
+    btn.disabled = false;
+  }
+}
+
+async function manualBuy(sizeEth) {
+  if (!_swapTokenData) return;
+  const btnId = {0.01:'btnBuy001', 0.02:'btnBuy002', 0.05:'btnBuy005'}[sizeEth];
+  const btn   = document.getElementById(btnId);
+  btn.disabled = true;
+  btn.textContent = 'Opening...';
+  document.getElementById('swapMsg').innerHTML = '';
+
+  try {
+    const r = await fetch(`${API}/api/manual/buy`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        token_address:   _swapTokenData.address,
+        token_symbol:    _swapTokenData.symbol,
+        price_usd:       _swapTokenData.price_usd,
+        trade_size_eth:  sizeEth,
+        eth_price_usd:   _ethPrice,
+      }),
+    });
+    const d = await r.json();
+    if (!r.ok) {
+      showSwapMsg(d.error || 'Buy failed', false);
+    } else {
+      showSwapMsg(`✓ Position opened — ${d.symbol} @ $${d.price.toFixed(8)} | ${sizeEth} ETH`, true);
+      appendLog({ text: `⚡ Manual BUY ${d.symbol} | ${sizeEth} ETH @ $${d.price.toFixed(8)}`, ts: new Date().toISOString() });
+      await refreshAll();
+    }
+  } catch(e) {
+    showSwapMsg('Buy failed — ' + e.message, false);
+  } finally {
+    btn.textContent = {0.01:'BUY 0.01 ETH', 0.02:'BUY 0.02 ETH', 0.05:'BUY 0.05 ETH'}[sizeEth];
+    btn.disabled = false;
+  }
+}
+
+function showSwapMsg(msg, success) {
+  const el = document.getElementById('swapMsg');
+  el.innerHTML = `<div class="${success ? 'swap-success' : 'swap-error'}">${msg}</div>`;
+}
+
+// ── Agent settings ────────────────────────────────────────────────────
+
+async function loadAgentSettings() {
+  try {
+    const r = await fetch(`${API}/api/agent-settings`);
+    const d = await r.json();
+    if (d.api_key) {
+      document.getElementById('apiKeyInput').value = d.api_key;
+    }
+    if (d.opacity !== undefined) {
+      document.getElementById('opacitySlider').value = d.opacity;
+    }
+    if (d.blur !== undefined) {
+      document.getElementById('blurSlider').value = d.blur;
+    }
+    applyThemeSettings();
+    if (d.theme) setTheme(d.theme, false);  // false = don't save, just apply
+  } catch(e) { console.warn('agent settings load error', e); }
+}
+
+async function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key) return;
+  await fetch(`${API}/api/agent-settings`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ api_key: key }),
+  });
+  btnSaved('btnSaveApiKey');
+  appendLog({ text: 'API key saved — takes effect on next agent start', ts: new Date().toISOString() });
+}
+
+function toggleApiKeyVisibility() {
+  const input = document.getElementById('apiKeyInput');
+  const btn   = document.getElementById('apiKeyToggle');
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = 'HIDE';
+  } else {
+    input.type = 'password';
+    btn.textContent = 'SHOW';
+  }
+}
+
+function applyThemeSettings() {
+  const opacity = parseInt(document.getElementById('opacitySlider').value);
+  const blur    = parseInt(document.getElementById('blurSlider').value);
+  document.getElementById('opacityVal').textContent = opacity + '%';
+  document.getElementById('blurVal').textContent    = blur + 'px';
+  // Apply live to tab content panel
+  const panel = document.querySelector('.tab-content');
+  if (panel) {
+    panel.style.background = `rgba(0,0,0,${opacity/100})`;
+    panel.style.backdropFilter = `blur(${blur}px)`;
+    panel.style.webkitBackdropFilter = `blur(${blur}px)`;
+  }
+}
+
+async function saveThemeSettings() {
+  const opacity = parseInt(document.getElementById('opacitySlider').value);
+  const blur    = parseInt(document.getElementById('blurSlider').value);
+  await fetch(`${API}/api/agent-settings`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ opacity, blur }),
+  });
+  btnSaved('btnSaveTheme');
+  appendLog({ text: `Theme saved — opacity ${opacity}% blur ${blur}px`, ts: new Date().toISOString() });
+}
+
+function setTheme(theme, save = true) {
+  const isA = theme === 'A';
+  document.getElementById('themeA').classList.toggle('active', isA);
+  document.getElementById('themeB').classList.toggle('active', !isA);
+  document.body.style.backgroundImage = isA
+    ? "url('/static/bg.jpg')"
+    : "url('/static/bg2.jpg')";
+  const logo = document.getElementById('siteLogo');
+  if (logo) logo.src = isA ? '/static/logo.png' : '/static/logo2.png';
+  if (save) {
+    fetch(`${API}/api/agent-settings`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ theme }),
+    });
+  }
+}
+
+// ── Utilities ─────────────────────────────────────────────────────────
+
+function fmtEth(n, d=6) {
+  if (n === null || n === undefined) return '—';
+  const v = parseFloat(n);
+  if (isNaN(v)) return '—';
+  return (v >= 0 ? '+' : '') + v.toFixed(d) + ' ETH';
+}
+
+function fmtEthAbs(n, d=6) {
+  if (n === null || n === undefined) return '—';
+  return parseFloat(n).toFixed(d) + ' ETH';
+}
+
+function fmtUsd(n) {
+  if (n === null || n === undefined) return '$—';
+  const v = parseFloat(n);
+  if (isNaN(v)) return '$—';
+  return (v >= 0 ? '+' : '-') + '$' + Math.abs(v).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function fmtUsdAbs(n) {
+  if (n === null || n === undefined) return '$—';
+  return '$' + Math.abs(parseFloat(n)).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function fmtPrice(n) {
+  if (!n || n === 0) return '$—';
+  const v = parseFloat(n);
+  if (isNaN(v) || v === 0) return '$—';
+  if (v >= 0.01) return '$' + v.toPrecision(6).replace(/\.?0+$/, '');
+  // Count leading zeros after decimal point
+  const str    = v.toFixed(20);
+  const match  = str.match(/^0\.(0+)([1-9]\d*)/);
+  if (!match) return '$' + v.toExponential(4);
+  const zeros  = match[1].length;
+  const digits = match[2].slice(0, 4).replace(/0+$/, '');
+  // Convert zero count to subscript unicode
+  const subs   = {'0':'₀','1':'₁','2':'₂','3':'₃','4':'₄',
+                   '5':'₅','6':'₆','7':'₇','8':'₈','9':'₉'};
+  const subNum = String(zeros).split('').map(d => subs[d]).join('');
+  return `$0.0${subNum}${digits}`;
+}
+
+function pnlClass(v) {
+  const n = parseFloat(v);
+  if (n > 0) return 'pnl-pos';
+  if (n < 0) return 'pnl-neg';
+  return 'pnl-zer';
+}
+
+function fmt(n, d=2) {
+  if (n === null || n === undefined) return '—';
+  return parseFloat(n).toFixed(d);
+}
+
+function timeAgo(iso) {
+  if (!iso) return '';
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60)    return Math.round(diff) + 's ago';
+  if (diff < 3600)  return Math.round(diff/60) + 'm ago';
+  if (diff < 86400) return Math.round(diff/3600) + 'h ago';
+  return Math.round(diff/86400) + 'd ago';
+}
+
+function walletColor(address) {
+  return _walletColorMap[address?.toLowerCase()] || '#9090b0';
+}
+
+// ── Status ────────────────────────────────────────────────────────────
+
+async function loadStatus() {
+  try {
+    const r = await fetch(`${API}/api/status`);
+    const d = await r.json();
+    const running = d.agent_running;
+    document.getElementById('statusDot').className    = 'status-dot' + (running ? ' running' : '');
+    document.getElementById('statusLabel').textContent = running ? 'RUNNING' : 'STOPPED';
+    document.getElementById('statusLabel').className   = 'status-label' + (running ? ' running' : '');
+    document.getElementById('startBtn').style.display  = running ? 'none' : '';
+    document.getElementById('stopBtn').style.display   = running ? '' : 'none';
+    document.getElementById('statOpen').textContent    = d.open_positions;
+    document.getElementById('openBadge').textContent   = d.open_positions;
+    document.getElementById('openBadge2').textContent  = d.open_positions;
+    const port = d.portfolio || {};
+    if (port.eth_price_usd) {
+      _ethPrice = port.eth_price_usd;
+      document.getElementById('ethTicker').textContent = `ETH $${_ethPrice.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+    }
+  } catch(e) { console.warn('status', e); }
+}
+
+// ── Portfolio ─────────────────────────────────────────────────────────
+
+async function loadPortfolio() {
+  try {
+    const r = await fetch(`${API}/api/portfolio`);
+    const d = await r.json();
+    if (!d || !d.current_balance_eth) return;
+    const balEth = d.current_balance_eth || 0;
+    const startEth = d.starting_balance_eth || 0;
+    const availEth = d.available_eth || 0;
+    const balEl = document.getElementById('statBalanceEth');
+    balEl.textContent = availEth.toFixed(6) + ' ETH';
+    balEl.style.color = balEth >= startEth ? 'var(--green)' : 'var(--red)';
+    document.getElementById('statBalanceUsd').textContent = `of ${balEth.toFixed(6)} ETH total`;
+    // Token value = sum of open position USD values (updated by loadPositions)
+    const pnlEth = d.total_pnl_eth || 0;
+    const pnlEthEl = document.getElementById('statPnlEth');
+    pnlEthEl.textContent = fmtEth(pnlEth);
+    pnlEthEl.style.color = pnlEth >= 0 ? 'var(--green)' : 'var(--red)';
+    document.getElementById('statPnlUsd').textContent = fmtUsd(d.total_pnl_usd || 0);
+    document.getElementById('statPnlUsd').style.color = (d.total_pnl_usd||0) >= 0 ? 'var(--green)' : 'var(--red)';
+    const urEth = d.unrealized_pnl_eth || 0;
+    const urEl = document.getElementById('statUnrealEth');
+    urEl.textContent = fmtEth(urEth);
+    urEl.style.color = urEth >= 0 ? 'var(--green)' : 'var(--red)';
+    document.getElementById('statUnrealUsd').textContent = fmtUsd(urEth * _ethPrice);
+    document.getElementById('statUnrealUsd').style.color = urEth >= 0 ? 'var(--green)' : 'var(--red)';
+    document.getElementById('statWinRate').textContent  = fmt(d.win_rate_pct, 1) + '%';
+    document.getElementById('statTrades').textContent   = `${d.total_trades || 0} closed trades`;
+    document.getElementById('statGas').textContent      = `Gas: ${(d.gas_spent_eth||0).toFixed(6)} ETH`;
+    document.getElementById('statDrawdown').textContent = fmt(d.max_drawdown_pct, 1) + '%';
+    document.getElementById('statPeak').textContent     = `Peak: ${(d.peak_balance_eth||0).toFixed(6)} ETH`;
+  } catch(e) { console.warn('portfolio', e); }
+}
+
+// ── Open Positions ────────────────────────────────────────────────────
+
+async function loadPositions() {
+  try {
+    const r = await fetch(`${API}/api/positions`);
+    const d = await r.json();
+    const open = d.open || [];
+    document.getElementById('openBadge').textContent  = open.length;
+    document.getElementById('openBadge2').textContent = open.length;
+    document.getElementById('statOpen').textContent   = open.length;
+    const el = document.getElementById('openPositions');
+    if (!open.length) {
+      el.innerHTML = `<div class="empty"><div class="empty-icon">◎</div><div class="empty-text">No open positions</div></div>`;
+      document.getElementById('priceUpdateNote').textContent = '';
+      return;
+    }
+    el.innerHTML = `<table class="ptable">
+      <thead><tr>
+        <th>Token</th><th>Wallet</th><th>Entry</th><th>Current</th>
+        <th>Size ETH</th><th>P&L ETH</th><th>P&L USD</th><th>%</th><th>Gas</th><th>Opened</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${open.map(p => {
+          const color  = p.wallet_color || walletColor(p.wallet_address);
+          const pnlEth = p.unrealized_pnl_eth || 0;
+          const pnlUsd = p.unrealized_pnl_usd || 0;
+          const pct    = p.pnl_pct || 0;
+          return `<tr>
+            <td><a href="https://dexscreener.com/ethereum/${p.token_address}" target="_blank" style="color:var(--cyan)">${p.token_symbol}</a></td>
+            <td><span style="color:${color};font-weight:700">${p.wallet_label}</span></td>
+            <td style="color:var(--text2)">${fmtPrice(p.entry_price_usd)}</td>
+            <td style="color:var(--text2)">${fmtPrice(p.current_price_usd)}</td>
+            <td style="color:var(--text2)">${(p.trade_size_eth||0).toFixed(6)}</td>
+            <td class="${pnlClass(pnlEth)}">${fmtEth(pnlEth,6)}</td>
+            <td class="${pnlClass(pnlUsd)}">${fmtUsd(pnlUsd)}</td>
+            <td class="${pnlClass(pct)}">${pct>=0?'+':''}${fmt(pct,1)}%</td>
+            <td style="color:var(--text3)">${(p.gas_eth||0).toFixed(6)}</td>
+            <td style="color:var(--text3)">${timeAgo(p.opened_at)}</td>
+            <td><button class="btn-close-pos" onclick="closePosition('${p.id}')">CLOSE</button></td>
+          </tr>`;
+        }).join('')}
+      </tbody></table>`;
+    document.getElementById('priceUpdateNote').textContent = 'Prices update every 15 min when stopped — click ↻ REFRESH for immediate update';
+
+    // Update token value on balance card
+    const tokenValueUsd = open.reduce((sum, p) => sum + (p.trade_size_usd || 0) + (p.unrealized_pnl_usd || 0), 0);
+    document.getElementById('statAvailable').textContent = `Token value: ${fmtUsdAbs(tokenValueUsd)}`;
+  } catch(e) { console.warn('positions', e); }
+}
+
+// ── Trade History ─────────────────────────────────────────────────────
+
+async function loadHistory() {
+  try {
+    const r = await fetch(`${API}/api/trades`);
+    const trades = await r.json();
+    document.getElementById('historyBadge').textContent  = trades.length;
+    document.getElementById('historyBadge2').textContent = trades.length;
+    const el = document.getElementById('tradeHistory');
+    if (!trades.length) {
+      el.innerHTML = `<div class="empty"><div class="empty-icon">◎</div><div class="empty-text">No closed trades yet</div></div>`;
+      return;
+    }
+    el.innerHTML = `<table class="ptable">
+      <thead><tr>
+        <th>Token</th><th>Wallet</th><th>Entry</th><th>Exit</th>
+        <th>Size ETH</th><th>P&L ETH</th><th>P&L USD</th><th>%</th><th>Reason</th><th>Closed</th>
+      </tr></thead>
+      <tbody>
+        ${trades.map(t => {
+          const color  = t.wallet_color || walletColor(t.wallet_address);
+          const pnlEth = t.realized_pnl_eth || 0;
+          const pnlUsd = t.realized_pnl_usd || 0;
+          const pct    = t.pnl_pct || 0;
+          return `<tr>
+            <td><span style="color:var(--text)">${t.token_symbol}</span></td>
+            <td><span style="color:${color};font-weight:700">${t.wallet_label}</span></td>
+            <td style="color:var(--text2)">${fmtPrice(t.entry_price_usd)}</td>
+            <td style="color:var(--text2)">${fmtPrice(t.exit_price_usd)}</td>
+            <td style="color:var(--text2)">${(t.trade_size_eth||0).toFixed(6)}</td>
+            <td class="${pnlClass(pnlEth)}">${fmtEth(pnlEth,6)}</td>
+            <td class="${pnlClass(pnlUsd)}">${fmtUsd(pnlUsd)}</td>
+            <td class="${pnlClass(pct)}">${pct>=0?'+':''}${fmt(pct,1)}%</td>
+            <td><span class="reason-tag reason-${t.close_reason}">${(t.close_reason||'').replace('_',' ')}</span></td>
+            <td style="color:var(--text3)">${timeAgo(t.closed_at)}</td>
+          </tr>`;
+        }).join('')}
+      </tbody></table>`;
+  } catch(e) { console.warn('history', e); }
+}
+
+// ── Watchlist ─────────────────────────────────────────────────────────
+
+async function loadWatchlist() {
+  try {
+    const r  = await fetch(`${API}/api/watchlist`);
+    const ws = await r.json();
+    document.getElementById('wlBadge').textContent  = `${ws.length}/5`;
+    document.getElementById('wlBadge2').textContent = `${ws.length} / 5`;
+    _walletColorMap = {};
+    ws.forEach((w, i) => { _walletColorMap[w.address.toLowerCase()] = WALLET_COLORS[i % WALLET_COLORS.length]; });
+    const el = document.getElementById('walletList');
+    if (!ws.length) {
+      el.innerHTML = `<div class="empty"><div class="empty-text">No wallets added yet</div></div>`;
+      return;
+    }
+    el.innerHTML = ws.map((w, i) => {
+      const color = WALLET_COLORS[i % WALLET_COLORS.length];
+      return `<div class="wl-item" style="background:${color}18;border-left:3px solid ${color};">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div>
+            <div class="wl-label" style="color:${color}">${w.label}</div>
+            <a class="wl-addr" href="https://etherscan.io/address/${w.address}" target="_blank">${w.address}</a>
+          </div>
+        </div>
+        <button class="btn-wl-remove" onclick="removeWallet('${w.address}')">REMOVE</button>
+      </div>`;
+    }).join('');
+  } catch(e) { console.warn('watchlist', e); }
+}
+
+// ── Config ────────────────────────────────────────────────────────────
+
+async function loadConfig() {
+  try {
+    const r = await fetch(`${API}/api/config`);
+    const d = await r.json();
+    document.getElementById('cfgBalance').value   = d.starting_balance_eth;
+    document.getElementById('cfgTradeSize').value = d.trade_size_eth;
+    document.getElementById('cfgTp').value        = d.take_profit_pct;
+    document.getElementById('cfgSl').value        = d.stop_loss_pct;
+  } catch(e) { console.warn('config', e); }
+}
+
+async function saveConfig() {
+  const body = {
+    starting_balance_eth: parseFloat(document.getElementById('cfgBalance').value),
+    trade_size_eth:       parseFloat(document.getElementById('cfgTradeSize').value),
+    take_profit_pct:      parseFloat(document.getElementById('cfgTp').value),
+    stop_loss_pct:        parseFloat(document.getElementById('cfgSl').value),
+  };
+  await fetch(`${API}/api/config`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  btnSaved('btnSaveConfig');
+  appendLog({ text: `Settings saved — ${body.trade_size_eth} ETH/trade | TP ${body.take_profit_pct}% | SL ${body.stop_loss_pct}%`, ts: new Date().toISOString() });
+}
+
+// ── Actions ───────────────────────────────────────────────────────────
+
+async function addWallet() {
+  const addr  = document.getElementById('walletAddrInput').value.trim();
+  const label = document.getElementById('walletLabelInput').value.trim();
+  if (!addr) return;
+  const r = await fetch(`${API}/api/watchlist`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({address:addr,label}) });
+  const d = await r.json();
+  if (d.success) {
+    document.getElementById('walletAddrInput').value  = '';
+    document.getElementById('walletLabelInput').value = '';
+    loadWatchlist();
+    appendLog({ text: `Wallet added: ${addr}`, ts: new Date().toISOString() });
+  } else {
+    appendLog({ text: `Failed: ${d.message}`, ts: new Date().toISOString() });
+  }
+}
+
+async function removeWallet(address) {
+  if (!confirm('Remove this wallet from copy-trading?')) return;
+  await fetch(`${API}/api/watchlist/${address}`, { method:'DELETE' });
+  loadWatchlist();
+}
+
+async function closePosition(posId) {
+  if (!confirm('Manually close this position?')) return;
+  const r = await fetch(`${API}/api/positions/${posId}/close`, { method:'POST' });
+  const d = await r.json();
+  if (d.success) {
+    appendLog({ text: `Position ${posId} manually closed | P&L: ${fmtUsd(d.pnl_usd)}`, ts: new Date().toISOString() });
+    refreshAll();
+  }
+}
+
+async function resetPortfolio() {
+  const bal = parseFloat(document.getElementById('cfgBalance').value) || 1.0;
+  if (!confirm(`Reset portfolio to ${bal} ETH? All history will be cleared.`)) return;
+  await fetch(`${API}/api/portfolio/reset`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({starting_balance_eth:bal}) });
+  refreshAll();
+  appendLog({ text: `Portfolio reset — starting balance ${bal} ETH`, ts: new Date().toISOString() });
+}
+
+async function startAgent() {
+  await fetch(`${API}/api/agent/start`, { method:'POST' });
+  play('start');
+  loadStatus();
+  connectWS();
+}
+
+async function stopAgent() {
+  await fetch(`${API}/api/agent/stop`, { method:'POST' });
+  play('stop');
+  await loadStatus();  // server awaits process exit before responding
+}
+
+// ── Log ───────────────────────────────────────────────────────────────
+
+function appendLog(entry) {
+  const term = document.getElementById('logTerminal');
+  const text = entry.text.replace(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3} \[\w+\] /, '');
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  // Colorize wallet labels in log using color map
+  let colored = text;
+  Object.entries(_walletColorMap).forEach(([addr, col]) => {
+    // Match wallet label if known, else short address
+    const shortAddr = addr.slice(0,10) + '...';
+    colored = colored.replace(new RegExp(shortAddr.replace('.','[.]'), 'g'),
+      `<span style="color:${col};font-weight:700">${shortAddr}</span>`);
+  });
+  line.innerHTML = colored
+    .replace(/(TycheBot started\.|Sim Trade Agent started\.)/g, '<span class="log-cyan">$1</span>')
+    .replace(/(Monitoring for new trades[^<]*)/g, '<span class="log-cyan">$1</span>')
+    .replace(/(Position opened[^<]*)/g,      '<span class="log-green">$1</span>')
+    .replace(/(Position closed[^<]*)/g,      '<span class="log-amber">$1</span>')
+    .replace(/(Take profit hit[^<]*)/g,      '<span class="log-green">$1</span>')
+    .replace(/(Stop loss hit[^<]*)/g,        '<span class="log-red">$1</span>')
+    .replace(/(💰[^<]*)/g,                  '<span class="log-gold">$1</span>')
+    .replace(/(📈[^<]*)/g,                  '<span class="log-green">$1</span>')
+    .replace(/(📉[^<]*)/g,                  '<span class="log-amber">$1</span>')
+    .replace(/(Insufficient balance[^<]*)/g, '<span class="log-red">$1</span>')
+    .replace(/(Cycle error[^<]*)/g,          '<span class="log-red">$1</span>');
+  term.appendChild(line);  // column-reverse CSS makes newest appear at top
+  const count = term.children.length;
+  document.getElementById('logBadge').textContent  = count;
+  document.getElementById('logBadge2').textContent = count + ' lines';
+}
+
+// ── WebSocket ─────────────────────────────────────────────────────────
+
+function connectWS() {
+  if (ws) ws.close();
+  ws = new WebSocket(`ws://${location.host}/ws/logs`);
+  ws.onmessage = e => appendLog(JSON.parse(e.data));
+  ws.onclose   = () => setTimeout(connectWS, 3000);
+}
+
+// ── Refresh ───────────────────────────────────────────────────────────
+
+async function refreshAll() {
+  await Promise.all([loadStatus(), loadPortfolio(), loadPositions(), loadHistory(), loadWatchlist()]);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────
+
+(async () => {
+  await loadAgentSettings();
+  await loadConfig();
+  await refreshAll();
+  try {
+    const r = await fetch(`${API}/api/logs`);
+    const logs = await r.json();
+    logs.forEach(appendLog);  // column-reverse CSS shows newest at top
+    // column-reverse CSS handles scroll position automatically
+  } catch(e) {}
+  connectWS();
+  setInterval(refreshAll, 30000);
+})();
+</script>
+</body>
+</html>
